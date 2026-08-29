@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTARG:SA — Next-Gen Multiplayer Launcher</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #050608; color: #f1f5f9; min-height: 100vh; }
+        .nav { position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 16px 5vw; background: rgba(5,6,8,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 20px; letter-spacing: 1px; }
+        .nav-logo span { background: linear-gradient(135deg,#00f2fe,#4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-links { display: flex; gap: 28px; align-items: center; font-size: 14px; color: #94a3b8; }
+        .nav-links a { color: inherit; text-decoration: none; transition: 0.2s; }
+        .nav-links a:hover { color: #00f2fe; }
+        .btn { padding: 9px 22px; border-radius: 10px; border: none; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-block; }
+        .btn-primary { background: linear-gradient(135deg,#00f2fe,#4facfe); color: #000; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #f1f5f9; }
+        .btn-outline:hover { border-color: #00f2fe; color: #00f2fe; }
+        .hero { min-height: 88vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 40px 5vw; position: relative; overflow: hidden; }
+        .hero::before { content: ''; position: absolute; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(0,242,254,0.12), transparent 70%); top: 10%; left: 20%; filter: blur(60px); }
+        .hero::after { content: ''; position: absolute; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(236,72,153,0.1), transparent 70%); bottom: 10%; right: 20%; filter: blur(60px); }
+        .hero-inner { position: relative; z-index: 2; max-width: 760px; }
+        .hero-logo { height: 90px; margin-bottom: 20px; }
+        .hero h1 { font-size: 52px; font-weight: 900; letter-spacing: 1px; margin-bottom: 12px; }
+        .hero h1 span { background: linear-gradient(135deg,#00f2fe,#4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 18px; color: #94a3b8; margin-bottom: 34px; line-height: 1.6; }
+        .hero-btns { display: flex; gap: 14px; justify-content: center; }
+        .features { padding: 70px 5vw; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; max-width: 1200px; margin: 0 auto; }
+        .feat { background: rgba(15,18,28,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 28px 24px; transition: 0.3s; }
+        .feat:hover { border-color: rgba(0,242,254,0.4); transform: translateY(-4px); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .feat .icon { font-size: 28px; margin-bottom: 14px; }
+        .feat h3 { font-size: 18px; margin-bottom: 8px; }
+        .feat p { font-size: 14px; color: #94a3b8; line-height: 1.6; }
+        .cta { text-align: center; padding: 80px 5vw; }
+        .cta h2 { font-size: 34px; margin-bottom: 14px; }
+        .cta p { color: #94a3b8; margin-bottom: 28px; }
+        footer { text-align: center; padding: 28px 5vw; border-top: 1px solid rgba(255,255,255,0.06); color: #64748b; font-size: 13px; }
+        footer a { color: #00f2fe; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-logo"><img src="MTARGLOGO.png" alt="MTARG" style="height:32px;"/><span>MTARG</span></div>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="license.html">License</a>
+            <a href="https://discord.gg/qqXVDsWcV8">Discord</a>
+            <a class="btn btn-outline" href="#download">Download</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-inner">
+            <img class="hero-logo" src="MTARGLOGO.png" alt="MTARG:SA"/>
+            <h1>Next-Gen <span>Multiplayer</span> Launcher</h1>
+            <p>MTARG is the next-generation multiplayer launcher for Grand Theft Auto: San Andreas. Modern interface, fast, and built for the community.</p>
+            <div class="hero-btns">
+                <a class="btn btn-primary" href="#download">Download Client</a>
+                <a class="btn btn-outline" href="license.html">Get a Server License</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="features" id="features">
+        <div class="feat">
+            <div class="icon">🎮</div>
+            <h3>Modern Launcher</h3>
+            <p>A clean glass interface with quick connect, server browser, and settings built in.</p>
+        </div>
+        <div class="feat">
+            <div class="icon">🖼️</div>
+            <h3>Server Branding</h3>
+            <p>Register your server with a logo and banner. They show in the client's server list.</p>
+        </div>
+        <div class="feat">
+            <div class="icon">🔑</div>
+            <h3>License System</h3>
+            <p>Secure per-server licenses to control who plays on your server.</p>
+        </div>
+        <div class="feat">
+            <div class="icon">⚡</div>
+            <h3>Fast & Stable</h3>
+            <p>Optimized rendering and a reliable loading experience.</p>
+        </div>
+    </section>
+
+    <section class="cta" id="download">
+        <h2>Ready to play?</h2>
+        <p>Download the MTARG client and join the community.</p>
+        <a class="btn btn-primary" href="MTARG.exe">Download MTARG.exe</a>
+    </section>
+
+    <footer>
+        <p>© 2026 MTARG. All rights reserved. · <a href="https://mtarg.xyz">mtarg.xyz</a> · <a href="https://discord.gg/qqXVDsWcV8">Discord</a></p>
+    </footer>
+</body>
+</html>
