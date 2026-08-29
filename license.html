@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTARG - License</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #050608; color: #f1f5f9; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .card { width: 460px; max-width: 92vw; background: rgba(15,18,28,0.85); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 36px 32px; box-shadow: 0 30px 60px rgba(0,0,0,0.6); }
+        h1 { font-size: 24px; text-align: center; margin-bottom: 4px; }
+        h1 span { background: linear-gradient(135deg,#00f2fe,#4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sub { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 28px; }
+        label { display: block; font-size: 13px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
+        input { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.3); color: #fff; font-size: 14px; outline: none; margin-bottom: 16px; }
+        input:focus { border-color: #00f2fe; }
+        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; background: linear-gradient(135deg,#00f2fe,#4facfe); color: #000; margin-bottom: 10px; }
+        .btn:hover { opacity: 0.92; }
+        .btn-outline { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #cbd5e1; font-size: 14px; cursor: pointer; }
+        .btn-outline:hover { background: rgba(255,255,255,0.06); }
+        .key-box { margin-top: 22px; background: rgba(0,242,254,0.06); border: 1px solid rgba(0,242,254,0.25); border-radius: 12px; padding: 16px; text-align: center; display: none; }
+        .key-text { font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #00f2fe; word-break: break-all; user-select: all; }
+        .err { color: #ff5555; font-size: 13px; text-align: center; margin-top: 10px; min-height: 18px; }
+        .ok { color: #50fa7b; font-size: 13px; text-align: center; margin-top: 10px; min-height: 18px; }
+        .info { font-size: 12px; color: #64748b; text-align: center; margin-top: 14px; }
+        .logged-in { display: none; }
+        .link { color: #00f2fe; cursor: pointer; text-align: center; font-size: 13px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>MTARG<span>:SA</span></h1>
+        <div class="sub">Sign up to get your license key</div>
+
+        <!-- Sign up / Sign in form -->
+        <div class="auth-form" id="authForm">
+            <label>Email</label>
+            <input type="email" id="email" placeholder="you@example.com"/>
+            <label>Password</label>
+            <input type="password" id="password" placeholder="Min 6 characters"/>
+            <button class="btn" id="authBtn" onclick="doAuth()">Sign Up</button>
+            <button class="btn-outline" id="switchBtn" onclick="toggleAuth()">Already have an account? Sign In</button>
+            <div class="err" id="authMsg"></div>
+        </div>
+
+        <!-- Logged in - register / edit server license -->
+        <div class="logged-in" id="loggedIn">
+            <div class="ok" id="userInfo">Signed in</div>
+            <label>Server Name</label>
+            <input type="text" id="serverName" placeholder="My MTARG Server"/>
+            <label>Server IP (host:port)</label>
+            <input type="text" id="serverIp" placeholder="127.0.0.1:22003"/>
+            <label>Logo URL (square, e.g. 256x256)</label>
+            <input type="url" id="logoUrl" placeholder="https://yoursite.com/logo.png"/>
+            <label>Banner URL (wide, e.g. 1600x300)</label>
+            <input type="url" id="bannerUrl" placeholder="https://yoursite.com/banner.jpg"/>
+            <label>Tags (comma separated)</label>
+            <input type="text" id="tags" placeholder="pvp, freeroam, roleplay"/>
+            <button class="btn" id="genBtn" onclick="generateLicense()">Generate My Server License</button>
+            <div class="key-box" id="keyBox" style="display:none;">
+                <div class="label" style="font-size:11px;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Your Server License Key</div>
+                <div class="key-text" id="licenseKey"></div>
+                <div class="info">Put this key in mtaserver.conf &lt;license&gt; and start the licensecheck resource.</div>
+            </div>
+            <div class="err" id="genMsg"></div>
+            <button class="btn-outline" style="margin-top:8px;" id="delBtn" onclick="deleteLicense()" style="display:none;">Delete License</button>
+            <button class="btn-outline" style="margin-top:14px;" onclick="signOut()">Sign Out</button>
+        </div>
+
+        <div class="info">One license key per account. You cannot generate unlimited keys.</div>
+    </div>
+
+    <script>
+        // ===== Supabase config (publishable key) =====
+        const SUPABASE_URL = 'https://kgjfiburuprozfdykmvl.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_42OAteN-HVcp42S7KsU5dQ_BtbMIJx6';
+
+        let isSignUp = true;
+        let accessToken = null;   // Supabase auth token after sign in
+        let currentUserId = null;
+
+        function toggleAuth() {
+            isSignUp = !isSignUp;
+            document.getElementById('authBtn').textContent = isSignUp ? 'Sign Up' : 'Sign In';
+            document.getElementById('switchBtn').textContent = isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up";
+            document.getElementById('authMsg').textContent = '';
+        }
+
+        async function doAuth() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const msg = document.getElementById('authMsg');
+            if (!email || !password) { msg.textContent = 'Enter email and password'; return; }
+            msg.textContent = 'Please wait...';
+            msg.className = 'err';
+
+            try {
+                if (isSignUp) {
+                    // Sign up via Supabase Auth REST API
+                    const res = await fetch(SUPABASE_URL + '/auth/v1/signup', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+                        body: JSON.stringify({ email, password })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) { msg.textContent = data.msg || data.error_description || ('Sign up failed (' + res.status + ')'); return; }
+                    // If the response has no access_token, email confirmation is REQUIRED
+                    // (Supabase sends a confirmation email; the user must click it first).
+                    if (!data.access_token) {
+                        msg.textContent = 'Account created! Check your email to confirm, then Sign In.';
+                        msg.className = 'ok';
+                    } else {
+                        // Confirmation is OFF in Supabase - the user is already logged in.
+                        // We block this path so licenses can't be generated before confirming.
+                        msg.textContent = 'Email confirmation is disabled in Supabase. Enable "Confirm email" under Authentication → Sign In/Providers → Email.';
+                        msg.className = 'err';
+                    }
+                    isSignUp = false;
+                    document.getElementById('authBtn').textContent = 'Sign In';
+                    document.getElementById('switchBtn').textContent = "Don't have an account? Sign Up";
+                    return;
+                } else {
+                    // Sign in via Supabase Auth REST API
+                    const res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+                        body: JSON.stringify({ email, password })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.access_token) {
+                        const m = data.msg || data.error_description || ('Sign in failed (' + res.status + ')');
+                        if (m && m.toLowerCase().indexOf('confirm') !== -1) {
+                            msg.textContent = 'Please confirm your email first (check your inbox), then sign in.';
+                        } else {
+                            msg.textContent = m;
+                        }
+                        return;
+                    }
+                    accessToken = data.access_token;
+                    currentUserId = data.user.id;
+                    showLoggedIn(data.user.email);
+                }
+            } catch (e) {
+                msg.textContent = 'Network error: ' + e.message;
+            }
+        }
+
+        function showLoggedIn(email) {
+            document.getElementById('authForm').style.display = 'none';
+            document.getElementById('loggedIn').style.display = 'block';
+            document.getElementById('userInfo').textContent = 'Signed in as ' + email;
+            checkExistingLicense();
+        }
+
+        // Check if the user already has a license, pre-fill the form and allow edit/delete
+        async function checkExistingLicense() {
+            const res = await fetch(SUPABASE_URL + '/rest/v1/licenses?user_id=eq.' + currentUserId + '&select=license_key,server_name,server_ip,logo_url,banner_url,tags', {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + accessToken }
+            });
+            if (!res.ok) return;
+            const rows = await res.json();
+            if (!rows || rows.length === 0) return;
+            const lic = rows[0];
+            document.getElementById('licenseKey').textContent = lic.license_key;
+            document.getElementById('keyBox').style.display = 'block';
+            // Pre-fill the form fields with the existing data
+            if (lic.server_name) document.getElementById('serverName').value = lic.server_name;
+            if (lic.server_ip) document.getElementById('serverIp').value = lic.server_ip;
+            if (lic.logo_url) document.getElementById('logoUrl').value = lic.logo_url;
+            if (lic.banner_url) document.getElementById('bannerUrl').value = lic.banner_url;
+            if (lic.tags && lic.tags.length) document.getElementById('tags').value = lic.tags.join(', ');
+            // Switch the button to "Update"
+            const btn = document.getElementById('genBtn');
+            btn.textContent = 'Update License';
+            btn.onclick = function(){ updateLicense(); };
+            document.getElementById('delBtn').style.display = 'block';
+            const msg = document.getElementById('genMsg');
+            msg.textContent = 'You already have a license. Edit your server info below or delete it.';
+            msg.className = 'ok';
+        }
+
+        // Update the existing license's server info
+        async function updateLicense() {
+            const msg = document.getElementById('genMsg');
+            const serverName = document.getElementById('serverName').value.trim();
+            const serverIp = document.getElementById('serverIp').value.trim();
+            const logoUrl = document.getElementById('logoUrl').value.trim();
+            const bannerUrl = document.getElementById('bannerUrl').value.trim();
+            const tagsStr = document.getElementById('tags').value.trim();
+            const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
+            msg.textContent = 'Saving...';
+            msg.className = 'err';
+
+            const res = await fetch(SUPABASE_URL + '/rest/v1/licenses?user_id=eq.' + currentUserId, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': 'Bearer ' + accessToken,
+                    'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({ server_name: serverName, server_ip: serverIp, logo_url: logoUrl, banner_url: bannerUrl, tags: tags })
+            });
+            if (!res.ok) {
+                msg.textContent = 'Update failed: ' + res.status + ' ' + (await res.text()).substring(0, 120);
+                return;
+            }
+            msg.textContent = 'License updated!';
+            msg.className = 'ok';
+        }
+
+        // Delete the license entirely
+        async function deleteLicense() {
+            const msg = document.getElementById('genMsg');
+            if (!confirm('Delete your license? This cannot be undone.')) return;
+            msg.textContent = 'Deleting...';
+            msg.className = 'err';
+            const res = await fetch(SUPABASE_URL + '/rest/v1/licenses?user_id=eq.' + currentUserId, {
+                method: 'DELETE',
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + accessToken, 'Prefer': 'return=minimal' }
+            });
+            if (!res.ok) {
+                msg.textContent = 'Delete failed: ' + res.status;
+                return;
+            }
+            // Reset the form for a new license
+            document.getElementById('serverName').value = '';
+            document.getElementById('serverIp').value = '';
+            document.getElementById('logoUrl').value = '';
+            document.getElementById('bannerUrl').value = '';
+            document.getElementById('tags').value = '';
+            document.getElementById('keyBox').style.display = 'none';
+            document.getElementById('delBtn').style.display = 'none';
+            const btn = document.getElementById('genBtn');
+            btn.textContent = 'Generate My Server License';
+            btn.onclick = function(){ generateLicense(); };
+            msg.textContent = 'License deleted. You can generate a new one.';
+            msg.className = 'ok';
+        }
+
+        async function generateLicense() {
+            const msg = document.getElementById('genMsg');
+            const email = document.getElementById('email').value.trim();
+            const serverName = document.getElementById('serverName').value.trim();
+            const serverIp = document.getElementById('serverIp').value.trim();
+            const logoUrl = document.getElementById('logoUrl').value.trim();
+            const bannerUrl = document.getElementById('bannerUrl').value.trim();
+            const tagsStr = document.getElementById('tags').value.trim();
+            const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
+            const key = makeKey();
+            msg.textContent = 'Generating...';
+            msg.className = 'err';
+
+            if (!serverName || !serverIp) {
+                msg.textContent = 'Enter a server name and IP (host:port)';
+                return;
+            }
+
+            try {
+                // Check they don't already have one
+                const existing = await fetch(SUPABASE_URL + '/rest/v1/licenses?user_id=eq.' + currentUserId + '&select=id', {
+                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + accessToken }
+                });
+                if (existing.ok) {
+                    const rows = await existing.json();
+                    if (rows && rows.length > 0) {
+                        msg.textContent = 'You already have a license. Only one per account.';
+                        return;
+                    }
+                }
+
+                // Insert the license + server info linked to this user
+                const res = await fetch(SUPABASE_URL + '/rest/v1/licenses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': 'Bearer ' + accessToken,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        license_key: key,
+                        user_id: currentUserId,
+                        email: email,
+                        server_name: serverName,
+                        server_ip: serverIp,
+                        logo_url: logoUrl,
+                        banner_url: bannerUrl,
+                        tags: tags,
+                        active: true
+                    })
+                });
+
+                if (!res.ok) {
+                    const txt = await res.text();
+                    if (res.status === 400 && txt.indexOf('licenses') !== -1) {
+                        msg.textContent = 'Table "licenses" not found. Run supabase_schema_v2.sql in the SQL Editor.';
+                    } else if (res.status === 42501) {
+                        msg.textContent = 'Permission denied. Enable the RLS policies in supabase_schema_v2.sql.';
+                    } else if (res.status === 409) {
+                        msg.textContent = 'You already have a license. Only one per account.';
+                    } else {
+                        msg.textContent = 'Error ' + res.status + ': ' + txt.substring(0, 150);
+                    }
+                    return;
+                }
+
+                document.getElementById('licenseKey').textContent = key;
+                document.getElementById('keyBox').style.display = 'block';
+                msg.textContent = 'Server license generated!';
+                msg.className = 'ok';
+            } catch (e) {
+                msg.textContent = 'Network error: ' + e.message;
+            }
+        }
+
+        function makeKey() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let key = '';
+            for (let i = 0; i < 4; i++) {
+                if (i) key += '-';
+                for (let j = 0; j < 4; j++) key += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return key;
+        }
+
+        function signOut() {
+            accessToken = null;
+            currentUserId = null;
+            document.getElementById('loggedIn').style.display = 'none';
+            document.getElementById('authForm').style.display = 'block';
+            document.getElementById('keyBox').style.display = 'none';
+        }
+
+        // If Supabase redirected back here with #access_token=... (after email
+        // confirmation), capture the token and log the user in automatically.
+        function handleRedirectToken() {
+            const hash = window.location.hash;
+            if (!hash || hash.indexOf('access_token=') === -1) return false;
+            const params = new URLSearchParams(hash.substring(1));
+            const token = params.get('access_token');
+            if (!token) return false;
+            accessToken = token;
+            // Decode the JWT payload to get the user id + email
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+                currentUserId = payload.sub;
+                const email = payload.email || '';
+                // Clear the hash so the token is not left in the URL
+                history.replaceState(null, '', window.location.pathname);
+                showLoggedIn(email);
+                return true;
+            } catch (e) { return false; }
+        }
+
+        // On load: first check for a redirect token, then show the auth form.
+        document.getElementById('authForm').style.display = 'block';
+        if (!handleRedirectToken()) {
+            // No redirect token - the auth form is already visible
+        }
+
+        // ===== Handle Supabase auth callback (redirect with #access_token=...) =====
+        (function() {
+            const hash = window.location.hash;
+            if (hash && hash.indexOf('access_token=') !== -1) {
+                const params = new URLSearchParams(hash.substring(1));
+                const token = params.get('access_token');
+                if (token) {
+                    // Decode the JWT payload to get the user id + email
+                    try {
+                        const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+                        accessToken = token;
+                        currentUserId = payload.sub;
+                        const email = payload.email || 'signed in';
+                        // Clean the URL (remove the token) so refresh doesn't resend it
+                        history.replaceState(null, '', window.location.pathname);
+                        showLoggedIn(email);
+                    } catch (e) {
+                        console.log('Failed to decode auth token', e);
+                    }
+                }
+            }
+        })();
+    </script>
+</body>
+</html>
